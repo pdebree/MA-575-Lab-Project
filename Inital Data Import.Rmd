@@ -1,5 +1,31 @@
 ---
-title: "Inital Data Import"
+title: "Initial Bike Data Import"
 output: github
 ---
+The only data types we needed to change were workingday into a boolean, temp into a long, atemp into a long, hum into a long and windspeed into a long.
+
+Factor Variables: 
+- Season (1, 2, 3, 4)
+- Year (1, 2)
+- Month (1-12)
+- Weekday (0-6)
+
+
+```{r}
+bike <- read.csv2("hour.csv", header=TRUE, as.is=TRUE, sep=",")
+
+library(ggplot2)
+library(dplyr)
+```
+
+
+```{r}
+bike$workingday = as.logical(bike$workingday)
+bike$temp = as.numeric(bike$temp)
+bike$atemp = as.numeric(bike$temp)
+bike$hum = as.numeric(bike$hum)
+bike$windspeed = as.numeric(bike$windspeed)
+
+bike
+```
 
