@@ -5,8 +5,10 @@ output:
     keep_md: true
   
 ---
+
+Test - Pippi 
 ```{r setup}
-    knitr::opts_knit$set(root.dir = normalizePath("C:/Users/yuki/Desktop/now")) 
+    knitr::opts_knit$set(root.dir = normalizePath("C:/Users//Users/pippidebree/Documents/BU/MA575/Lab/deliverable_4")) 
 ```
 
 ```{r, echo=FALSE}
