@@ -6,7 +6,7 @@ output:
   
 ---
 
-Test - Pippi 
+Test - Pippi, clone 
 ```{r setup}
     knitr::opts_knit$set(root.dir = normalizePath("C:/Users//Users/pippidebree/Documents/BU/MA575/Lab/deliverable_4")) 
 ```
