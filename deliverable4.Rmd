@@ -1,0 +1,144 @@
+---
+title: Lab 9 Deliverable 
+output: 
+  html_document:
+    keep_md: true
+  
+---
+```{r setup}
+    knitr::opts_knit$set(root.dir = normalizePath("C:/Users/yuki/Desktop/now")) 
+```
+
+```{r, echo=FALSE}
+# Read data from csv
+bikingdata <- read.csv("day.csv",header=TRUE,as.is = TRUE)
+library(carData)
+library(car)
+library(tidyverse)
+library(modelr)
+```
+
+```{r, echo=FALSE}
+# Create Temporary dataset with temperature and total count of bikes
+Temperature = as.numeric(bikingdata$temp * 41)
+Year = as.factor(bikingdata$yr)
+Count = as.numeric(bikingdata$cnt)
+Weathersituation = as.factor(bikingdata$weathersit)
+Humidity = as.numeric(bikingdata$hum * 100)
+Windspeed = as.numeric(bikingdata$windspeed * 67)
+Month = as.numeric(bikingdata$mnth)
+Holiday = as.numeric(bikingdata$holiday)
+Season = as.factor(bikingdata$season)
+id = as.numeric(bikingdata$instant)
+Registered=as.numeric(bikingdata$registered)
+Casual=as.numeric(bikingdata$casual)
+Workingday = as.factor(bikingdata$workingday)
+tempds <- data.frame(Year, Temperature, Count, Weathersituation, Humidity, Windspeed, Month, Holiday, Season, id, Workingday,Casual,Registered)
+rm(Temperature, Count, Month, Humidity, Windspeed, Weathersituation, Holiday, Season, id, Workingday, Year,Casual, Registered)
+Dataset<-tempds[complete.cases(tempds), ]
+Dataset0<-Dataset[Dataset$Year==0,]
+Dataset1<-Dataset[Dataset$Year==1,]
+```
+
+```{r, echo=FALSE}
+# Randomize rows
+Dataset0 = Dataset0[sample(nrow(Dataset0)),]
+Dataset1 = Dataset1[sample(nrow(Dataset1)),]
+```
+
+```{r, echo=FALSE}
+# Perform training
+attach(Dataset0)
+```
+
+```{r}
+# Plot scatter matrix 
+names(Dataset0)
+pairs(~Count+Weathersituation+Temperature+Humidity+Windspeed+Month+Holiday+Season+Workingday,data=Dataset0,gap=0.4, pch = 19, cex = 0.1)
+
+# Correlation matrix
+X <- cbind(Count,Weathersituation,Temperature,Humidity,Windspeed,Month,Holiday,Season,Workingday)
+c <- cor(X)
+round(c,3)
+```
+
+```{r}
+# Perform Multiple Linear Regression between Count vs Temperature + Temperature^2 + Humidity + # Weathersituation + Windspeed + Season
+m.mls <- lm(Count ~ Temperature + I(Temperature^2) + Weathersituation + Humidity + Windspeed + Holiday + Season)
+
+# Examine R output for MLS
+summary(m.mls)
+```
+
+```{r}
+# Diagnostics -----------------------------------------------------------------------------------------------
+
+# Standarized Residuals
+# vs Count
+StanResMLS <- rstandard(m.mls)
+par(mfrow=c(1,1))
+plot(Count,StanResMLS,xlab="Count", ylab="Standardized Residuals",xlim=c(0,7000), col="blue", pch = 19, cex = 0.5)
+abline(h=2,lty=2)
+abline(h=-2,lty=2)
+legend(5.5, 1.5, legend=c("MLS"), col=c("blue"), lty=0, cex=1, pch=19)
+```
+
+```{r}
+# vs Fitted
+par(mfrow=c(1,1))
+plot(fitted(m.mls),StanResMLS,xlab="Fitted", ylab="Standardized Residuals",xlim=c(0,7000), col="blue", pch = 19, cex = 0.5)
+abline(h=2,lty=2)
+abline(h=-2,lty=2)
+legend(5.5, 1.5, legend=c("MLS"), col=c("blue"), lty=0, cex=1, pch=19)
+```
+
+```{r}
+# Test of Normality for Standarized Residuals of MLS
+q1 <- qqnorm(StanResMLS, plot.it = FALSE)
+plot(range(q1$x, q1$x), range(q1$y, q1$y), ylab = "Standardized Residuals", xlab = "Theoretical Quantiles" ) 
+points(q1)
+points(q1,col="blue", pch = 19, cex = 0.5)
+qqline(StanResMLS,lty = 2)
+legend(2, 0, legend=c("MLS"), col=c("blue"), lty=0, cex=1, pch=19)
+```
+
+```{r}
+# Histogram of QMLS and QuartLS
+par(mfrow=c(1,1))
+hist(StanResMLS,50)
+```
+
+```{r}
+# Validation 
+# Residuals for training data
+ResMLS <- resid(m.mls)
+
+# Residuals for validation data
+output<-predict(m.mls, se.fit = TRUE, newdata=data.frame(Temperature=Dataset1$Temperature, Humidity=Dataset1$Humidity,Weathersituation=Dataset1$Weathersituation,Windspeed=Dataset1$Windspeed,Season=Dataset1$Season,Holiday=Dataset1$Holiday))
+ResMLSValidation <- Dataset1$Count - output$fit
+
+# Plot residuals
+# From the below plot, we found the red points are concentrated at the upper right of the blue
+# points. I guess it is due to the nature increase of users from 2011 to 2012 (i.e. For
+# example, the bike company launched more bikes in 2012 and bike sharing became more popular). # However, the variables we have can't capture the nature increase.
+par(mfrow=c(1,1))
+plot(Count,ResMLS,xlab="Count", ylab="Residuals",xlim=c(0,7000), ylim=c(min(ResMLS,ResMLSValidation),max(ResMLS,ResMLSValidation)),  col=c("blue"), lty=0, cex=1, pch=19)
+points(Dataset1$Count,ResMLSValidation,xlab="Count", ylab="Residuals",xlim=c(0,7000),col="red", lty=0, cex=1, pch=19)
+legend(0, 3000, legend=c("Training","Validation"), col=c("blue","red"), lty=0, cex=1, pch=19)
+```
+
+```{r}
+# Mean Square Error for training data
+mean((ResMLS)^2)
+
+# Mean Square Error for validation data
+mean((ResMLSValidation)^2)
+
+# Relative Mean Square Error for validation data
+mean((ResMLSValidation)^2) / mean((Dataset1$Count)^2)
+
+```
+
+```{r}
+detach(Dataset0)
+```
